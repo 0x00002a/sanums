@@ -36,6 +36,11 @@ concept specialisation_of = requires(const T& val) {
     []<typename... Args>(const V<Args...>&){}(val);
 };
 
+template<typename F, typename To>
+concept castable_to = requires(F f) {
+    { static_cast<To>(f) } -> std::same_as<To>;
+};
+
 }
 
 namespace except {
@@ -81,7 +86,7 @@ constexpr auto apply_bin(auto lhs, auto rhs, auto op) {
     using rhs_v = typename std::decay_t<decltype(rhs)>::value_type;
     using retr_v = bigger_t<lhs_v, rhs_v>;
     using retr_t = Wrap<retr_v>;
-    return retr_t{op(std::bit_cast<retr_v>(lhs), std::bit_cast<retr_v>(rhs))};
+    return retr_t{op(static_cast<retr_v>(lhs), static_cast<retr_v>(rhs))};
 }
 }
 
@@ -120,10 +125,19 @@ public:
     template<concepts::conversion_safe<T> V>
     constexpr explicit basic_strict_num(V v) : val_{std::bit_cast<T>(v)} {}
 
+    template<typename OT>
+    constexpr auto operator<=>(basic_strict_num<OT> other) {
+        return val_ <=> other.val_;
+    }
+    template<typename OT>
+    constexpr auto operator==(basic_strict_num<OT> other) {
+        return !(*this < other) && !(*this > other);
+    }
+
     template<typename V>
         requires concepts::conversion_safe<T, V>
     constexpr explicit operator V() {
-        return std::bit_cast<V>(val_);
+        return static_cast<V>(val_);
     }
 
     template<typename RhsV>
@@ -142,17 +156,44 @@ public:
         return util::apply_bin<basic_strict_num>(*this, rhs, [](auto lhs, auto rhs) { return lhs * rhs; });
     }
     template<typename RhsV>
-        requires (concepts::same_signidness_v<value_type, RhsV> && (std::integral<T> == std::integral<RhsV>)) 
+        requires (concepts::same_signidness_v<value_type, RhsV> && (std::integral<T> == std::integral<RhsV>))
     constexpr auto operator/(basic_strict_num<RhsV> rhs) {
         return util::apply_bin<basic_strict_num>(*this, rhs, [](auto lhs, auto rhs) { return lhs / rhs; });
     }
 
 private:
+    template<concepts::numeric By>
+    friend constexpr auto operator<<(basic_strict_num f, By by) {
+        f.val_ <<= by;
+        return f;
+    }
+    template<concepts::specialisation_of<basic_strict_num> By>
+    friend constexpr auto operator<<(basic_strict_num f, By by) {
+        f.val_ <<= by.val_;
+        return f;
+    }
+
     basic_strict_num(T v, bool) : val_{v} {}
 
     value_type val_;
 
 };
+
+#define IMPL_EQ_OP(op) \
+    template <typename Lhs, typename Rhs> \
+    requires requires (Lhs l, Rhs r) { \
+        { l op r } -> std::convertible_to<Lhs>; \
+    } \
+    constexpr auto operator op##= (Lhs& l, Rhs r) -> Lhs& { \
+        l = l op r; \
+        return l; \
+    }
+
+IMPL_EQ_OP(<<)
+IMPL_EQ_OP(*)
+IMPL_EQ_OP(/)
+IMPL_EQ_OP(-)
+IMPL_EQ_OP(+)
 
 static_assert(concepts::conversion_safe_v<int, long int>);
 }
