@@ -1,3 +1,8 @@
+/**
+ * Copyright Natasha England-Elbro 2022-present. GPLv3
+ * Read the license file in the repo you should've got this from
+ */
+
 #pragma once
 
 #include <concepts>
