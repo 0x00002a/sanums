@@ -86,13 +86,7 @@ TEST_CASE("numeric conversions") {
 TEST_CASE("from converts to correct type for equality") {
     constexpr auto vnum = 267;
     u16 v{vnum};
-    CHECK(v == sn::from(vnum));
+    CHECK(v == sn::from(u64{vnum}));
 }
-
-
-
-
-
-
 
 

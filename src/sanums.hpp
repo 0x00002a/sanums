@@ -147,6 +147,7 @@ public:
     template<concepts::conversion_safe<T> V>
     explicit constexpr basic_strict_num(V v) : basic_strict_num{v, false} {}
 
+    constexpr basic_strict_num() = default;
     template<std::convertible_to<T> V>
     requires(!concepts::specialisation_of<V, basic_strict_num> && !concepts::conversion_safe_v<V, T>)
     explicit constexpr basic_strict_num(V v) : val_{static_cast<T>(v)} {
@@ -171,8 +172,8 @@ public:
     }
 
 #define OP_SAME_SIGN(op) \
-    constexpr auto operator op (basic_strict_num rhs) noexcept { \
-        return util::apply_bin<basic_strict_num>(*this, rhs, [](auto lhs, auto rhs) { return lhs op rhs; }); \
+    friend constexpr auto operator op (basic_strict_num lhs, basic_strict_num rhs) noexcept { \
+        return util::apply_bin<basic_strict_num>(lhs, rhs, [](auto lhs, auto rhs) { return lhs op rhs; }); \
     }
 
     OP_SAME_SIGN(+)
@@ -204,7 +205,7 @@ private:
 
     constexpr basic_strict_num(T v, bool) noexcept : val_{v} {}
 
-    value_type val_;
+    value_type val_{};
 
 };
 
@@ -241,14 +242,11 @@ using usize = detail::basic_strict_num<std::size_t>;
 using isize = detail::basic_strict_num<std::ptrdiff_t>;
 
 static_assert(!concepts::numeric<u8>);
+static_assert(std::is_trivially_copyable_v<u8>);
 
 template<concepts::specialisation_of<detail::basic_strict_num> T>
 constexpr auto from(T v) {
     return detail::conv_type<T>{v};
-}
-template<concepts::numeric T>
-constexpr auto from(T v) {
-    return from(detail::basic_strict_num<T>{v});
 }
 
 }
