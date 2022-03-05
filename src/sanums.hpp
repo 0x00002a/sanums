@@ -207,17 +207,6 @@ public:
 
 
 private:
-    template<concepts::numeric By>
-    friend constexpr auto operator<<(basic_strict_num f, By by) {
-        f.val_ <<= by;
-        return f;
-    }
-    template<concepts::specialisation_of<basic_strict_num> By>
-    friend constexpr auto operator<<(basic_strict_num f, By by) {
-        f.val_ <<= by.val_;
-        return f;
-    }
-
     constexpr basic_strict_num(T v, bool) noexcept : val_{v} {}
 
     value_type val_{};

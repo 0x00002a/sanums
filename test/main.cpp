@@ -68,7 +68,7 @@ TEST_CASE("adding works") {
 
 TEST_CASE("shifting works") {
     sn::u32 l{65};
-    l <<= 2;
+    l <<= u32{2};
     CHECK(l == sn::u32{65 << 2});
 }
 
