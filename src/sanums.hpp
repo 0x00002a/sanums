@@ -59,10 +59,8 @@ template<concepts::numeric T, concepts::numeric F>
 constexpr auto cast_is_invalid(F from) -> bool {
     if constexpr (concepts::conversion_safe_v<F, T>) {
         return false;
-    } else if (from > std::numeric_limits<T>::max() || from < std::numeric_limits<T>::min()) {
-        return false;
     } else {
-        return true;
+        return (from > std::numeric_limits<T>::max() || from < std::numeric_limits<T>::min());
     }
 }
 template<typename To, typename From>
@@ -103,15 +101,11 @@ public:
 
     template<concepts::specialisation_of<basic_strict_num> Other>
     constexpr auto as() const {
-        if constexpr (concepts::conversion_safe<T, typename Other::value_type>) {
+        using to_t = typename Other::value_type;
+        if (!util::cast_is_invalid<to_t>(val_)) {
             return as_unchecked<Other>();
         } else {
-            using to_t = typename Other::value_type;
-            if (!util::cast_is_invalid<to_t>(val_)) {
-                return as_unchecked<Other>();
-            } else {
-                throw except::invalid_cast("");
-            }
+            throw except::invalid_cast("");
         }
     }
 

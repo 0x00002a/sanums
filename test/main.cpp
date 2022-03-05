@@ -82,5 +82,3 @@ TEST_CASE("numeric conversions") {
         CHECK_THROWS(v.as<u8>());
     }
 }
-constexpr u8 v2 = u16{277}.as<u8>();
-
