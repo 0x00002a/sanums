@@ -7,7 +7,17 @@
 
 namespace sn {
 
+namespace traits {
+template<typename T, typename F>
+struct from_for : public std::false_type {};
+}
+
 namespace concepts {
+
+template<typename T, typename F>
+concept from = requires(F v) {
+    { ::sn::traits::from_for<T, F>::from(v) } -> std::convertible_to<T>;
+};
 
 template<typename T>
 concept numeric = std::is_arithmetic_v<T>;
@@ -19,11 +29,27 @@ concept is_unsigned = std::is_unsigned_v<T>;
 template<typename F, typename T>
 constexpr bool fits_in_v = std::numeric_limits<F>::max() >= std::numeric_limits<T>::max();
 
+
 template<typename F, typename T>
-constexpr bool conversion_safe_v =
-        (std::integral<F> == std::integral<T>)
-        && (std::numeric_limits<T>::max() >= std::numeric_limits<F>::max())
-        && (is_unsigned<F> || (std::numeric_limits<F>::min() >= std::numeric_limits<T>::min()));
+constexpr auto conversion_safe_f() {
+    if constexpr (std::same_as<F, T>) {
+        return true;
+    }
+    else if constexpr (std::same_as<T, uint64_t> || std::same_as<F, uint64_t>) {
+        return false;
+    } else {
+        return
+            (std::integral<F> == std::integral<T>)
+        && (static_cast<uint64_t>(std::numeric_limits<T>::max()) >= static_cast<uint64_t>(std::numeric_limits<F>::max()))
+        && (static_cast<int64_t>(std::numeric_limits<T>::min()) <= static_cast<int64_t>(std::numeric_limits<F>::min()));
+    }
+}
+
+template<typename F, typename T>
+constexpr bool conversion_safe_v = conversion_safe_f<F, T>();
+
+static_assert(!conversion_safe_v<uint16_t, int16_t>);
+static_assert(!conversion_safe_v<unsigned int, int>);
 
 template<typename F, typename T>
 concept conversion_safe = conversion_safe_v<F, T>;
@@ -118,13 +144,14 @@ public:
     constexpr static auto from_unchecked(V v) noexcept {
         return basic_strict_num(v, false);
     }
+    template<concepts::conversion_safe<T> V>
+    explicit constexpr basic_strict_num(V v) : basic_strict_num{v, false} {}
 
     template<std::convertible_to<T> V>
+    requires(!concepts::specialisation_of<V, basic_strict_num> && !concepts::conversion_safe_v<V, T>)
     explicit constexpr basic_strict_num(V v) : val_{static_cast<T>(v)} {
-        if constexpr (!concepts::conversion_safe_v<V, T>) {
-            if (v != val_) {
-                throw except::invalid_cast("cannot fit " + std::to_string(v) + " into size");
-            }
+        if (v != val_) {
+            throw except::invalid_cast("cannot fit " + std::to_string(v) + " into size");
         }
     }
     constexpr basic_strict_num(const basic_strict_num&) noexcept = default;
@@ -183,6 +210,44 @@ private:
 
 };
 
+static_assert(concepts::conversion_safe_v<int, long int>);
+
+
+template<concepts::specialisation_of<basic_strict_num> T>
+class conv_type {
+    using value_type = typename T::value_type;
+public:
+    template<concepts::specialisation_of<basic_strict_num> V>
+    constexpr operator V() {
+        return v_.template as<V>();
+    }
+    constexpr explicit conv_type(T v) : v_{v} {}
+
+private:
+    T v_;
+};
+
+}
+
+using u8 = detail::basic_strict_num<std::uint8_t>;
+using u16 = detail::basic_strict_num<std::uint16_t>;
+using u32 = detail::basic_strict_num<std::uint32_t>;
+using u64 = detail::basic_strict_num<std::uint64_t>;
+using i32 = detail::basic_strict_num<std::int32_t>;
+using i64 = detail::basic_strict_num<std::int64_t>;
+
+
+template<concepts::specialisation_of<detail::basic_strict_num> T>
+constexpr auto from(T v) {
+    return detail::conv_type<T>{v};
+}
+template<concepts::numeric T>
+constexpr auto from(T v) {
+    return from(detail::basic_strict_num<T>{v});
+}
+
+namespace detail {
+
 #define IMPL_EQ_OP(op) \
     template <typename Lhs, typename Rhs> \
     requires requires (Lhs l, Rhs r) { \
@@ -204,21 +269,6 @@ IMPL_EQ_OP(-)
 IMPL_EQ_OP(+)
 
 #undef IMPL_EQ_OP
-
-static_assert(concepts::conversion_safe_v<int, long int>);
-
-
-
-
 }
-
-using u8 = detail::basic_strict_num<std::uint8_t>;
-using u16 = detail::basic_strict_num<std::uint16_t>;
-using u32 = detail::basic_strict_num<std::uint32_t>;
-using u64 = detail::basic_strict_num<std::uint64_t>;
-using i32 = detail::basic_strict_num<std::int32_t>;
-using i64 = detail::basic_strict_num<std::int64_t>;
-
-
 }
 

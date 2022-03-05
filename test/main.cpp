@@ -82,3 +82,8 @@ TEST_CASE("numeric conversions") {
         CHECK_THROWS(v.as<u8>());
     }
 }
+
+TEST_CASE("from converts to correct type for equality") {
+    //u16 v{267};
+    //CHECK(v == sn::from<uint16_t>(24));
+}
