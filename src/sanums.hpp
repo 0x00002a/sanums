@@ -30,7 +30,7 @@ template<typename F, typename T>
 constexpr bool fits_in_v = std::numeric_limits<F>::max() >= std::numeric_limits<T>::max();
 
 
-template<typename F, typename T>
+template<concepts::numeric F, concepts::numeric T>
 constexpr auto conversion_safe_f() {
     if constexpr (std::same_as<F, T>) {
         return true;
@@ -52,7 +52,7 @@ static_assert(!conversion_safe_v<uint16_t, int16_t>);
 static_assert(!conversion_safe_v<unsigned int, int>);
 
 template<typename F, typename T>
-concept conversion_safe = conversion_safe_v<F, T>;
+concept conversion_safe = concepts::numeric<F> && concepts::numeric<T> && conversion_safe_v<F, T>;
 
 template<typename F, typename T>
 constexpr bool same_signidness_v = is_unsigned<F> == is_unsigned<T>;
@@ -166,10 +166,8 @@ public:
         return !(*this < other) && !(*this > other);
     }
 
-    template<typename V>
-        requires concepts::conversion_safe<T, V>
-    constexpr explicit operator V() {
-        return static_cast<V>(val_);
+    constexpr explicit operator T() {
+        return val_;
     }
 
 #define OP_SAME_SIGN(op) \
@@ -236,6 +234,7 @@ using u64 = detail::basic_strict_num<std::uint64_t>;
 using i32 = detail::basic_strict_num<std::int32_t>;
 using i64 = detail::basic_strict_num<std::int64_t>;
 
+static_assert(!concepts::numeric<u8>);
 
 template<concepts::specialisation_of<detail::basic_strict_num> T>
 constexpr auto from(T v) {
@@ -251,7 +250,7 @@ namespace detail {
 #define IMPL_EQ_OP(op) \
     template <typename Lhs, typename Rhs> \
     requires requires (Lhs l, Rhs r) { \
-        { l op r } -> std::convertible_to<Lhs>; \
+        { l op r } -> std::same_as<Lhs>; \
     } \
     constexpr auto operator op##= (Lhs& l, Rhs r) noexcept -> Lhs& { \
         l = l op r; \
