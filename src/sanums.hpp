@@ -159,11 +159,11 @@ public:
     constexpr auto operator=(const basic_strict_num&) noexcept -> basic_strict_num& = default;
     constexpr auto operator=(basic_strict_num&&) noexcept -> basic_strict_num& = default;
 
-    constexpr auto operator<=>(basic_strict_num other) noexcept {
-        return val_ <=> other.val_;
+    friend constexpr auto operator<=>(basic_strict_num lhs, basic_strict_num rhs) noexcept {
+        return lhs.val_ <=> rhs.val_;
     }
-    constexpr auto operator==(basic_strict_num other) noexcept {
-        return !(*this < other) && !(*this > other);
+    friend constexpr auto operator==(basic_strict_num lhs, basic_strict_num rhs) noexcept -> bool {
+        return !(lhs < rhs) && !(lhs > rhs);
     }
 
     constexpr explicit operator T() {
