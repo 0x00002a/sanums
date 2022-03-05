@@ -89,4 +89,9 @@ TEST_CASE("from converts to correct type for equality") {
     CHECK(v == sn::from(u64{vnum}));
 }
 
+TEST_CASE("default constructor sets value to 0") {
+    u8 v;
+    CHECK(v == u8{0});
+}
+
 
