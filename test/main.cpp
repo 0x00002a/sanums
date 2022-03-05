@@ -94,4 +94,9 @@ TEST_CASE("default constructor sets value to 0") {
     CHECK(v == u8{0});
 }
 
+TEST_CASE("not works") {
+    constexpr auto v = 0xa;
+    constexpr auto expected = ~v;
+    CHECK(~i8{v} == i8{expected});
+}
 

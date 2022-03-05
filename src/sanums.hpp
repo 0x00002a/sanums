@@ -176,25 +176,35 @@ public:
         return val_;
     }
 
-#define OP_SAME_SIGN(op) \
+#define BIN_OP(op) \
     friend constexpr auto operator op (basic_strict_num lhs, basic_strict_num rhs) noexcept { \
         return util::apply_bin<basic_strict_num>(lhs, rhs, [](auto lhs, auto rhs) { return lhs op rhs; }); \
     }
 
-    OP_SAME_SIGN(+)
-    OP_SAME_SIGN(-)
-    OP_SAME_SIGN(^)
-    OP_SAME_SIGN(&)
-    OP_SAME_SIGN(*)
-    OP_SAME_SIGN(%)
-    OP_SAME_SIGN(<<)
-    OP_SAME_SIGN(>>)
-#undef OP_SAME_SIGN
-
-    template<typename RhsV>
-    constexpr auto operator/(basic_strict_num rhs) {
-        return util::apply_bin<basic_strict_num>(*this, rhs, [](auto lhs, auto rhs) { return lhs / rhs; });
+    BIN_OP(+)
+    BIN_OP(-)
+    BIN_OP(^)
+    BIN_OP(&)
+    BIN_OP(*)
+    BIN_OP(%)
+    BIN_OP(<<)
+    BIN_OP(>>)
+    BIN_OP(/)
+#undef BIN_OP
+#define UN_OP(op) \
+    friend constexpr auto operator op (basic_strict_num v) { \
+        return basic_strict_num{op v.val_};\
     }
+
+    UN_OP(~)
+    UN_OP(++)
+    UN_OP(--)
+    UN_OP(+)
+    UN_OP(-)
+    UN_OP(!)
+
+#undef UN_OP
+
 
 private:
     template<concepts::numeric By>
@@ -242,6 +252,10 @@ using i8 = detail::basic_strict_num<std::int8_t>;
 using i16 = detail::basic_strict_num<std::int16_t>;
 using i32 = detail::basic_strict_num<std::int32_t>;
 using i64 = detail::basic_strict_num<std::int64_t>;
+
+using f32 = detail::basic_strict_num<float>;
+using f64 = detail::basic_strict_num<double>;
+
 
 using usize = detail::basic_strict_num<std::size_t>;
 using isize = detail::basic_strict_num<std::ptrdiff_t>;
