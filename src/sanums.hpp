@@ -231,8 +231,14 @@ using u8 = detail::basic_strict_num<std::uint8_t>;
 using u16 = detail::basic_strict_num<std::uint16_t>;
 using u32 = detail::basic_strict_num<std::uint32_t>;
 using u64 = detail::basic_strict_num<std::uint64_t>;
+
+using i8 = detail::basic_strict_num<std::int8_t>;
+using i16 = detail::basic_strict_num<std::int16_t>;
 using i32 = detail::basic_strict_num<std::int32_t>;
 using i64 = detail::basic_strict_num<std::int64_t>;
+
+using usize = detail::basic_strict_num<std::size_t>;
+using isize = detail::basic_strict_num<std::ptrdiff_t>;
 
 static_assert(!concepts::numeric<u8>);
 
@@ -245,7 +251,22 @@ constexpr auto from(T v) {
     return from(detail::basic_strict_num<T>{v});
 }
 
-namespace detail {
+}
+
+namespace std {
+
+// specifically allowed extension of std: https://en.cppreference.com/w/cpp/types/numeric_limits
+template<sn::concepts::specialisation_of<sn::detail::basic_strict_num> Num>
+struct numeric_limits<Num> : std::numeric_limits<typename Num::value_type> {};
+
+}
+
+static_assert(std::numeric_limits<sn::u8>::is_specialized);
+static_assert(std::numeric_limits<sn::u8>::max() == std::numeric_limits<sn::u8::value_type>::max());
+
+
+
+namespace sn::detail {
 
 #define IMPL_EQ_OP(op) \
     template <typename Lhs, typename Rhs> \
@@ -257,6 +278,7 @@ namespace detail {
         return l; \
     }
 
+// breaks my syntax highlighting, so put it at the end
 IMPL_EQ_OP(<<)
 IMPL_EQ_OP(>>)
 IMPL_EQ_OP(^)
@@ -269,5 +291,3 @@ IMPL_EQ_OP(+)
 
 #undef IMPL_EQ_OP
 }
-}
-
