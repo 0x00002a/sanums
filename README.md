@@ -1,6 +1,10 @@
 # Sanums
 _Sane numbers library for C++20_
 
+## Disclaimer
+
+This is a toy project, if you wanna use it in production great! But be prepared to maintain it yourself.
+
 ## Overview
 
 This is mostly a toy project to see what could be done with C++20 features such as concepts.
